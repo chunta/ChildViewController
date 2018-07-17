@@ -10,6 +10,85 @@ import UIKit
 
 fileprivate let kChildViewPadding:CGFloat = 16.0
 
+class PrivateTransitionContext : NSObject, UIViewControllerContextTransitioning
+{
+    private var privateViewCtls:Dictionary<String, UIViewController>!
+    private var privateAppearingFromRect:CGRect = CGRect.zero
+    private var privateAppearingToRect:CGRect = CGRect.zero
+    private var privateDisappearingFromRect:CGRect = CGRect.zero
+    private var privateDisappearingToRect:CGRect = CGRect.zero
+    
+    var containerView: UIView!
+    
+    var isAnimated: Bool = false
+    
+    var isInteractive: Bool = false
+    
+    var transitionWasCancelled: Bool = true
+    
+    var presentationStyle: UIModalPresentationStyle = .custom
+    
+    var targetTransform: CGAffineTransform = CGAffineTransform.identity
+    
+    init(fromViewController:UIViewController, toViewController:UIViewController, goRight:Bool) {
+        super.init()
+        self.presentationStyle = .custom
+        self.containerView = fromViewController.view.superview!
+        self.privateViewCtls = [UITransitionContextViewKey.from.rawValue:fromViewController, UITransitionContextViewKey.to.rawValue:toViewController]
+        
+        let travelDistance:CGRect = (goingRight ? -self.containerView.bounds.size.width : self.containerView.bounds.size.width);
+        self.privateDisappearingFromRect = self.privateAppearingToRect = self.containerView.bounds;
+        self.privateDisappearingToRect = CGRectOffset (self.containerView.bounds, travelDistance, 0);
+        self.privateAppearingFromRect = CGRectOffset (self.containerView.bounds, -travelDistance, 0);
+    }
+    
+    func updateInteractiveTransition(_ percentComplete: CGFloat) {
+        
+    }
+    
+    func finishInteractiveTransition() {
+        
+    }
+    
+    func cancelInteractiveTransition() {
+        
+    }
+    
+    func pauseInteractiveTransition() {
+        
+    }
+    
+    func completeTransition(_ didComplete: Bool) {
+        
+    }
+    
+    func viewController(forKey key: UITransitionContextViewControllerKey) -> UIViewController? {
+        return self.privateViewCtls[key.rawValue]
+    }
+
+    func view(forKey key: UITransitionContextViewKey) -> UIView? {
+        return self.privateViewCtls[key.rawValue]?.view
+    }
+
+    func initialFrame(for vc: UIViewController) -> CGRect {
+        if (vc == self.viewController(forKey: UITransitionContextViewControllerKey.from))
+        {
+            return self.privateDisappearingFromRect;
+        } else {
+            return self.privateAppearingFromRect;
+        }
+    }
+    
+    func finalFrame(for vc: UIViewController) -> CGRect {
+        if (vc == self.viewController(forKey: UITransitionContextViewControllerKey.to))
+        {
+            return self.privateDisappearingToRect;
+        } else {
+            return self.privateAppearingToRect;
+        }
+    }
+}
+
 class PrivateAnimatedTransition : NSObject, UIViewControllerAnimatedTransitioning {
     
     // return how many seconds the transition animation will take
@@ -24,27 +103,38 @@ class PrivateAnimatedTransition : NSObject, UIViewControllerAnimatedTransitionin
         let fromViewCtl:UIViewController! = transitionContext.viewController(forKey: .from)
         let toViewCtl:UIViewController! = transitionContext.viewController(forKey: .to)
         
-        //let offScreenRight = CGAffineTransform(translationX: container.frame.width, y: 0)
-        //let offScreenLeft = CGAffineTransform(translationX: -container.frame.width, y: 0)
-        
         let goRight:Bool = transitionContext.initialFrame(for: toViewCtl).origin.x < transitionContext.finalFrame(for: toViewCtl).origin.x
-        var travelDistance:CGFloat = transitionContext.containerView.bounds.size.width + kChildViewPadding
+        var travelDistance:CGFloat = transitionContext.containerView.bounds.size.width// + kChildViewPadding
         if (goRight==false)
         {
             travelDistance = travelDistance * -1
         }
         let travel:CGAffineTransform = CGAffineTransform(translationX:travelDistance, y: 0)
+        container.addSubview(toViewCtl.view)
+        toViewCtl.view.alpha = 0
+        toViewCtl.view.transform = travel.inverted()
         
+        UIView.animate(withDuration: 1, delay: 0, options: .allowUserInteraction, animations: {
+           fromViewCtl.view.transform = travel
+            fromViewCtl.view.alpha = 0
+            toViewCtl.view.transform = CGAffineTransform.identity
+            toViewCtl.view.alpha = 1
+        }) { (complete:Bool) in
+            
+        }
     }
 }
 
 
 
-class RestaurantViewController: UIViewController {
+class RestaurantViewController: UIViewController, UIViewControllerTransitioningDelegate {
 
-    @IBOutlet var containerView:UIView!
     
+    @IBOutlet var containerView:UIView!
     var curVctl:UIViewController!
+    
+    var animtransition:PrivateAnimatedTransition!
+    
     lazy var mapViewController:MapViewController = {
         let viewController:MapViewController = MapViewController(nibName: "MapViewController", bundle: nil)
         return viewController
@@ -68,6 +158,7 @@ class RestaurantViewController: UIViewController {
         mapViewController.didMove(toParentViewController: self)
         
         curVctl = mapViewController
+
     }
 
     override func didReceiveMemoryWarning() {
@@ -75,28 +166,33 @@ class RestaurantViewController: UIViewController {
     }
 
     @IBAction func onTransitionToMap() {
-        if (curVctl != mapViewController)
-        {
-            self.transitionToVctl(newvctl: mapViewController)
-        }
+        self.transitionVctl(mapViewController)
     }
     
     @IBAction func onTransitionToVideo() {
-        if (curVctl != videoViewController)
-        {
-            self.transitionToVctl(newvctl: videoViewController)
-        }
+        self.transitionVctl(videoViewController)
     }
     
     @IBAction func onTransitionToWeather() {
-        if (curVctl != weatherViewController)
+        self.transitionVctl(weatherViewController)
+    }
+    
+    func transitionVctl(_ vctl:UIViewController)
+    {
+        if (curVctl != vctl)
         {
-            self.transitionToVctl(newvctl: weatherViewController)
+            self.transitionToVctl(newvctl: vctl)
         }
     }
     
     func transitionToVctl(newvctl:UIViewController)
     {
+        let animator:PrivateAnimatedTransition = PrivateAnimatedTransition.init()
+        
+        //newvctl.transitioningDelegate = self
+        //self.addChildViewController(newvctl)
+        
+        /*
         self.addChildViewController(newvctl)
         self.transition(from: curVctl, to: newvctl, duration: 0.5, options:.transitionCrossDissolve, animations: {
   
@@ -109,6 +205,12 @@ class RestaurantViewController: UIViewController {
                 self.curVctl = newvctl
             }
         }
+        */
+    }
+    
+    func animationController(forPresented presented: UIViewController, presenting: UIViewController, source: UIViewController) -> UIViewControllerAnimatedTransitioning?
+    {
+        return PrivateAnimatedTransition()
     }
 
 }
