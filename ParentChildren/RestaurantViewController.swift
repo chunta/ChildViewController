@@ -8,6 +8,38 @@
 
 import UIKit
 
+fileprivate let kChildViewPadding:CGFloat = 16.0
+
+class PrivateAnimatedTransition : NSObject, UIViewControllerAnimatedTransitioning {
+    
+    // return how many seconds the transition animation will take
+    func transitionDuration(using transitionContext: UIViewControllerContextTransitioning?) -> TimeInterval {
+        return 0.5
+    }
+    
+    // animate a change from one viewcontroller to another
+    func animateTransition(using transitionContext: UIViewControllerContextTransitioning) {
+        //TODO: Perform the animation
+        let container = transitionContext.containerView
+        let fromViewCtl:UIViewController! = transitionContext.viewController(forKey: .from)
+        let toViewCtl:UIViewController! = transitionContext.viewController(forKey: .to)
+        
+        //let offScreenRight = CGAffineTransform(translationX: container.frame.width, y: 0)
+        //let offScreenLeft = CGAffineTransform(translationX: -container.frame.width, y: 0)
+        
+        let goRight:Bool = transitionContext.initialFrame(for: toViewCtl).origin.x < transitionContext.finalFrame(for: toViewCtl).origin.x
+        var travelDistance:CGFloat = transitionContext.containerView.bounds.size.width + kChildViewPadding
+        if (goRight==false)
+        {
+            travelDistance = travelDistance * -1
+        }
+        let travel:CGAffineTransform = CGAffineTransform(translationX:travelDistance, y: 0)
+        
+    }
+}
+
+
+
 class RestaurantViewController: UIViewController {
 
     @IBOutlet var containerView:UIView!
