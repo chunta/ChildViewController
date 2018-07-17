@@ -30,13 +30,13 @@ class PrivateTransitionContext : NSObject, UIViewControllerContextTransitioning
     
     var targetTransform: CGAffineTransform = CGAffineTransform.identity
     
-    init(fromViewController:UIViewController, toViewController:UIViewController, goRight:Bool) {
+    init(fromViewController:UIViewController, toViewController:UIViewController, goingRight:Bool) {
         super.init()
         self.presentationStyle = .custom
         self.containerView = fromViewController.view.superview!
         self.privateViewCtls = [UITransitionContextViewKey.from.rawValue:fromViewController, UITransitionContextViewKey.to.rawValue:toViewController]
         
-        let travelDistance:CGRect = (goingRight ? -self.containerView.bounds.size.width : self.containerView.bounds.size.width);
+        let travelDistance:CGFloat = (goingRight ? -self.containerView.bounds.size.width : self.containerView.bounds.size.width);
         self.privateDisappearingFromRect = self.privateAppearingToRect = self.containerView.bounds;
         self.privateDisappearingToRect = CGRectOffset (self.containerView.bounds, travelDistance, 0);
         self.privateAppearingFromRect = CGRectOffset (self.containerView.bounds, -travelDistance, 0);
