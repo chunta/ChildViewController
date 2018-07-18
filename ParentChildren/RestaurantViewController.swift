@@ -9,6 +9,8 @@
 import UIKit
 
 fileprivate let kChildViewPadding:CGFloat = 16.0
+fileprivate let kDamping:CGFloat = 0.75;
+fileprivate let kInitialSpringVelocity:CGFloat = 0.5;
 
 class PrivateTransitionContext : NSObject, UIViewControllerContextTransitioning
 {
@@ -100,7 +102,7 @@ class PrivateAnimatedTransition : NSObject, UIViewControllerAnimatedTransitionin
     
     // return how many seconds the transition animation will take
     func transitionDuration(using transitionContext: UIViewControllerContextTransitioning?) -> TimeInterval {
-        return 0.2
+        return 0.5
     }
     
     // animate a change from one viewcontroller to another
@@ -110,7 +112,7 @@ class PrivateAnimatedTransition : NSObject, UIViewControllerAnimatedTransitionin
         let fromViewCtl:UIViewController! = transitionContext.viewController(forKey: .from)
         let toViewCtl:UIViewController! = transitionContext.viewController(forKey: .to)
         let goRight:Bool = transitionContext.initialFrame(for: toViewCtl).origin.x < transitionContext.finalFrame(for: toViewCtl).origin.x
-        var travelDistance:CGFloat = transitionContext.containerView.bounds.size.width
+        var travelDistance:CGFloat = transitionContext.containerView.bounds.size.width + kChildViewPadding
         if (goRight==false)
         {
             travelDistance = travelDistance * -1
@@ -119,7 +121,7 @@ class PrivateAnimatedTransition : NSObject, UIViewControllerAnimatedTransitionin
         container.addSubview(toViewCtl.view)
         toViewCtl.view.transform = travel.inverted()
         
-        UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseOut, animations: {
+        UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: kDamping, initialSpringVelocity: kInitialSpringVelocity, options: .curveEaseOut, animations: {
             fromViewCtl.view.transform = travel
             toViewCtl.view.transform = CGAffineTransform.identity
         }) { (complete:Bool) in
@@ -203,7 +205,6 @@ class RestaurantViewController: UIViewController, UIViewControllerTransitioningD
         transitionContext.isAnimated = true
         transitionContext.isInteractive = false
         transitionContext.completeBlock = { (complete:Bool)-> Void in
-            
             /*
             Called just before the view controller is added or removed from a container view controller.
             If you are implementing your own container view controller,
